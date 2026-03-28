@@ -173,7 +173,7 @@ local isDragging = false
 local barrierParts = {}
 local flying = false
 local noClipEnabled = false
-local flySpeed = 100
+local flySpeed = 50
 local bodyVelocity
 local bodyGyro
 -- NEU: ESP Variablen
@@ -589,7 +589,7 @@ local function toggleBarriers()
     end
 end
 
--- Slider-Steuerung
+-- Slider-Steuerung Fly 
 SpeedSlider.MouseButton1Down:Connect(function()
     isDragging = true
 end)
@@ -601,7 +601,7 @@ UserInputService.InputChanged:Connect(function(input)
         local sliderSize = SpeedSlider.AbsoluteSize
         
         local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
-        speedValue = 0.1 + (relativeX * 4.9) -- 0.1 bis 5.0
+        speedValue = 0.1 + (relativeX * 9.9) -- 0.1 bis 10.0
         
         updateSpeed()
     end
