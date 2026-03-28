@@ -15,7 +15,7 @@ ScreenGui.Parent = game:GetService("CoreGui")
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 300, 0, 420) -- Höhe von 360 auf 420 erhöht
+MainFrame.Size = UDim2.new(0, 300, 0, 360)
 MainFrame.Position = UDim2.new(0.5, -150, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 MainFrame.BorderSizePixel = 2
@@ -115,50 +115,6 @@ InstaKillButton.TextColor3 = Color3.new(1, 0, 0)
 InstaKillButton.Font = Enum.Font.SourceSansBold
 InstaKillButton.TextSize = 16
 
--- NEU: Auto Geschwindigkeits-Label
-local CarSpeedLabel = Instance.new("TextLabel")
-CarSpeedLabel.Parent = MainFrame
-CarSpeedLabel.Size = UDim2.new(0, 100, 0, 20)
-CarSpeedLabel.Position = UDim2.new(0, 10, 0, 300)
-CarSpeedLabel.BackgroundTransparency = 1
-CarSpeedLabel.Text = "Car Speed: 1.0"
-CarSpeedLabel.TextColor3 = Color3.new(1, 1, 1)
-CarSpeedLabel.Font = Enum.Font.SourceSans
-CarSpeedLabel.TextSize = 14
-
--- NEU: Auto Geschwindigkeits-Regler
-local CarSpeedSlider = Instance.new("TextButton")
-CarSpeedSlider.Parent = MainFrame
-CarSpeedSlider.Size = UDim2.new(0, 200, 0, 20)
-CarSpeedSlider.Position = UDim2.new(0, 50, 0, 325)
-CarSpeedSlider.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-CarSpeedSlider.BorderSizePixel = 1
-CarSpeedSlider.BorderColor3 = Color3.new(0, 1, 0)
-CarSpeedSlider.Text = ""
-CarSpeedSlider.AutoButtonColor = false
-
--- NEU: Auto Bremskraft-Label
-local CarBrakeLabel = Instance.new("TextLabel")
-CarBrakeLabel.Parent = MainFrame
-CarBrakeLabel.Size = UDim2.new(0, 100, 0, 20)
-CarBrakeLabel.Position = UDim2.new(0, 10, 0, 350)
-CarBrakeLabel.BackgroundTransparency = 1
-CarBrakeLabel.Text = "Car Brake: 1.0"
-CarBrakeLabel.TextColor3 = Color3.new(1, 1, 1)
-CarBrakeLabel.Font = Enum.Font.SourceSans
-CarBrakeLabel.TextSize = 14
-
--- NEU: Auto Bremskraft-Regler
-local CarBrakeSlider = Instance.new("TextButton")
-CarBrakeSlider.Parent = MainFrame
-CarBrakeSlider.Size = UDim2.new(0, 200, 0, 20)
-CarBrakeSlider.Position = UDim2.new(0, 50, 0, 375)
-CarBrakeSlider.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-CarBrakeSlider.BorderSizePixel = 1
-CarBrakeSlider.BorderColor3 = Color3.new(0, 1, 0)
-CarBrakeSlider.Text = ""
-CarBrakeSlider.AutoButtonColor = false
-
 local CloseButton = Instance.new("TextButton")
 CloseButton.Parent = MainFrame
 CloseButton.Size = UDim2.new(0, 30, 0, 30)
@@ -169,6 +125,46 @@ CloseButton.Text = "X"
 CloseButton.TextColor3 = Color3.new(1, 1, 1)
 CloseButton.Font = Enum.Font.SourceSansBold
 CloseButton.TextSize = 18
+
+-- ==================== NEUE SPIELERLISTEN-GUI ====================
+local PlayerListFrame = Instance.new("Frame")
+PlayerListFrame.Parent = ScreenGui
+PlayerListFrame.Size = UDim2.new(0, 200, 0, 300)
+PlayerListFrame.Position = UDim2.new(0, 10, 0.5, -150) -- Links vom Hauptfenster
+PlayerListFrame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
+PlayerListFrame.BorderSizePixel = 2
+PlayerListFrame.BorderColor3 = Color3.new(0, 1, 0)
+PlayerListFrame.Active = true
+PlayerListFrame.Draggable = true
+
+local PlayerListTitle = Instance.new("TextLabel")
+PlayerListTitle.Parent = PlayerListFrame
+PlayerListTitle.Size = UDim2.new(1, 0, 0, 30)
+PlayerListTitle.Position = UDim2.new(0, 0, 0, 0)
+PlayerListTitle.BackgroundTransparency = 1
+PlayerListTitle.Text = "Target Follow"
+PlayerListTitle.TextColor3 = Color3.new(0, 1, 0)
+PlayerListTitle.Font = Enum.Font.SourceSansBold
+PlayerListTitle.TextSize = 16
+
+-- ScrollingFrame für die Liste der Spieler
+local PlayerScrollingFrame = Instance.new("ScrollingFrame")
+PlayerScrollingFrame.Parent = PlayerListFrame
+PlayerScrollingFrame.Size = UDim2.new(1, -10, 1, -40)
+PlayerScrollingFrame.Position = UDim2.new(0, 5, 0, 35)
+PlayerScrollingFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+PlayerScrollingFrame.BorderSizePixel = 0
+PlayerScrollingFrame.ScrollBarThickness = 8
+PlayerScrollingFrame.ScrollBarImageColor3 = Color3.new(0, 1, 0)
+
+-- Layout, um die Buttons automatisch zu sortieren
+local PlayerListLayout = Instance.new("UIListLayout")
+PlayerListLayout.Parent = PlayerScrollingFrame
+PlayerListLayout.SortOrder = Enum.SortOrder.Name
+PlayerListLayout.Padding = UDim.new(0, 2)
+
+-- Tabelle zum Speichern der Spieler-Buttons
+local playerButtons = {}
 
 -- Variablen
 local speedValue = 1.0
@@ -185,12 +181,10 @@ local espEnabled = false
 local espConnections = {}
 local espObjects = {}
 local instaKillEnabled = false
--- NEU: Auto-Funktionen Variablen
-local carSpeedValue = 1.0
-local carBrakeValue = 1.0
-local currentVehicle = nil
-local isDraggingCarSpeed = false
-local isDraggingCarBrake = false
+-- NEU: Target-Follow Variablen
+local targetPlayer = nil
+local isFollowing = false
+local followConnection = nil
 
 -- Geschwindigkeitsfunktion
 local function updateSpeed()
@@ -307,45 +301,6 @@ local function updateESP()
     end
 end
 
--- VERBESSERT: Funktionen zur Aktualisierung der Auto-Werte
-local function updateCarSpeed()
-    CarSpeedLabel.Text = "Car Speed: " .. string.format("%.1f", carSpeedValue)
-    if currentVehicle and currentVehicle:FindFirstChild("DriveSeat") then
-        local seat = currentVehicle.DriveSeat
-        -- Versucht, die MaxSpeed zu setzen. Ein typischer Wert ist 50-100.
-        if seat:FindFirstChild("MaxSpeed") then
-            seat.MaxSpeed.Value = 50 * carSpeedValue -- Setzt eine Basisgeschwindigkeit von 50, skaliert mit dem Regler
-        end
-        -- Manche Fahrzeuge verwenden 'MaxTorque' für die Beschleunigung
-        if seat:FindFirstChild("MaxTorque") then
-            seat.MaxTorque.Value = 5000 * carSpeedValue -- Setzt ein Basis-Torque, skaliert mit dem Regler
-        end
-    end
-end
-
-local function updateCarBrake()
-    CarBrakeLabel.Text = "Car Brake: " .. string.format("%.1f", carBrakeValue)
-    if currentVehicle and currentVehicle:FindFirstChild("DriveSeat") then
-        local seat = currentVehicle.DriveSeat
-        -- Die Bremskraft wird oft über 'BrakeTorque' gesteuert
-        if seat:FindFirstChild("BrakeTorque") then
-            seat.BrakeTorque.Value = 5000 * carBrakeValue -- Setzt eine Basis-Bremskraft, skaliert mit dem Regler
-        end
-    end
-end
-
--- Funktion, um das aktuelle Fahrzeug zu finden
-local function findCurrentVehicle()
-    if Character and Character:FindFirstChild("Humanoid") then
-        local seat = Character.Humanoid.SeatPart
-        if seat and seat:IsA("VehicleSeat") then
-            currentVehicle = seat.Parent
-        else
-            currentVehicle = nil
-        end
-    end
-end
-
 -- NEU: Insta-Kill Funktion
 local function onHit(hitPart)
     if not instaKillEnabled then return end
@@ -359,6 +314,100 @@ local function onHit(hitPart)
         humanoid.Health = 0
     end
 end
+
+-- ==================== NEUE TARGET-FOLLOW FUNKTIONEN ====================
+
+-- Erstellt oder aktualisiert den Button für einen einzelnen Spieler
+local function createOrUpdatePlayerButton(player)
+    if player == LocalPlayer then return end -- Nicht sich selbst anzeigen
+
+    local button = playerButtons[player]
+    if not button then
+        -- Button erstellen, falls er nicht existiert
+        button = Instance.new("TextButton")
+        button.Parent = PlayerScrollingFrame
+        button.Size = UDim2.new(1, 0, 0, 25)
+        button.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+        button.BorderSizePixel = 1
+        button.BorderColor3 = Color3.new(0.5, 0.5, 0.5)
+        button.TextColor3 = Color3.new(1, 1, 1)
+        button.Font = Enum.Font.SourceSans
+        button.TextSize = 14
+        playerButtons[player] = button
+    end
+
+    button.Text = player.Name
+    
+    -- Button-Farbe basierend auf dem Status aktualisieren
+    if isFollowing and targetPlayer == player then
+        button.BackgroundColor3 = Color3.new(0, 0.5, 0) -- Grün, wenn dieser Spieler das Ziel ist
+        button.Text = player.Name .. " [FOLLOWING]"
+    else
+        button.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2) -- Standardfarbe
+    end
+end
+
+-- Entfernt den Button eines Spielers, der gegangen ist
+local function removePlayerButton(player)
+    if playerButtons[player] then
+        playerButtons[player]:Destroy()
+        playerButtons[player] = nil
+    end
+end
+
+-- Hauptfunktion, um die gesamte Liste zu aktualisieren
+local function updatePlayerList()
+    -- Alte Buttons von Spielern entfernen, die nicht mehr im Server sind
+    for player, _ in pairs(playerButtons) do
+        if not Players:FindFirstChild(player.Name) then
+            removePlayerButton(player)
+        end
+    end
+    
+    -- Buttons für alle aktuellen Spieler erstellen oder aktualisieren
+    for _, player in pairs(Players:GetPlayers()) do
+        createOrUpdatePlayerButton(player)
+    end
+    
+    -- Größe des ScrollingFrame anpassen
+    PlayerScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, PlayerListLayout.AbsoluteContentSize.Y)
+end
+
+-- Funktion zum Starten/Stoppen des Folgens
+local function toggleFollow(playerToFollow)
+    if isFollowing and targetPlayer == playerToFollow then
+        -- Stoppe das Folgen
+        isFollowing = false
+        targetPlayer = nil
+        if followConnection then
+            followConnection:Disconnect()
+            followConnection = nil
+        end
+        print("Folgen beendet.")
+    else
+        -- Beginne, dem neuen Spieler zu folgen
+        if isFollowing and followConnection then
+            followConnection:Disconnect() -- Alte Verbindung trennen
+        end
+        isFollowing = true
+        targetPlayer = playerToFollow
+        print("Folge jetzt: " .. targetPlayer.Name)
+
+        -- Neue, verbesserte Version
+        followConnection = RunService.Heartbeat:Connect(function()
+            if isFollowing and targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") and Character and Character:FindFirstChild("HumanoidRootPart") then
+                local targetCFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+                Character.HumanoidRootPart.CFrame = targetCFrame * CFrame.new(0, 0, 3)
+            else
+                -- Wenn das Ziel verloren geht (z.B. tot), beende das Folgen sauber.
+                if isFollowing then
+                    print("Ziel verloren. Folgen wird beendet.")
+                    toggleFollow(targetPlayer) -- Beendet den Follow-Zustand
+                end
+            end
+        end)
+    end -- <--- DIESES END WAR WICHTIG!
+end -- <--- UND DIESES END BEENDET DIE toggleFollow FUNKTION!
 
 local function toggleInstaKill()
     instaKillEnabled = not instaKillEnabled
@@ -540,76 +589,29 @@ local function toggleBarriers()
     end
 end
 
-
 -- Slider-Steuerung
 SpeedSlider.MouseButton1Down:Connect(function()
     isDragging = true
 end)
 
-CarSpeedSlider.MouseButton1Down:Connect(function()
-    isDraggingCarSpeed = true
-end)
-
-CarBrakeSlider.MouseButton1Down:Connect(function()
-    isDraggingCarBrake = true
-end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        -- Originaler Geschwindigkeits-Regler
-        if isDragging then
-            local mousePos = input.Position
-            local sliderPos = SpeedSlider.AbsolutePosition
-            local sliderSize = SpeedSlider.AbsoluteSize
-            
-            local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
-            speedValue = 0.1 + (relativeX * 4.9)
-            
-            updateSpeed()
-        end
-
-        -- NEU: Auto Geschwindigkeits-Regler
-        if isDraggingCarSpeed then
-            local mousePos = input.Position
-            local sliderPos = CarSpeedSlider.AbsolutePosition
-            local sliderSize = CarSpeedSlider.AbsoluteSize
-            
-            local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
-            carSpeedValue = 0.1 + (relativeX * 4.9) -- 0.1 bis 5.0
-            
-            updateCarSpeed()
-        end
-
-       -- NEU: Auto Bremskraft-Regler
-if isDraggingCarBrake then
-    local mousePos = input.Position
-    local sliderPos = CarBrakeSlider.AbsolutePosition
-    local sliderSize = CarBrakeSlider.AbsoluteSize
-    
-    local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
-    carBrakeValue = 0.1 + (relativeX * 4.9) -- 0.1 bis 5.0
-    
-    updateCarBrake()
-end
-
+    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local mousePos = input.Position
+        local sliderPos = SpeedSlider.AbsolutePosition
+        local sliderSize = SpeedSlider.AbsoluteSize
+        
+        local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
+        speedValue = 0.1 + (relativeX * 4.9) -- 0.1 bis 5.0
+        
+        updateSpeed()
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if isDragging then
-            isDragging = false
-        end
-        if isDraggingCarSpeed then
-            isDraggingCarSpeed = false
-        end
-        if isDraggingCarBrake then
-            isDraggingCarBrake = false
-        end
+        isDragging = false
     end
 end)
-
-
 
 -- Button-Events
 FlyButton.MouseButton1Click:Connect(function()
@@ -713,32 +715,6 @@ end
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
 
--- NEU: Überwachung für das Ein- und Aussteigen
-RunService.Stepped:Connect(function()
-    findCurrentVehicle()
-end)
-
--- Optional: Setze die Werte zurück, wenn das Fahrzeug gewechselt wird
-local lastVehicle = nil
-spawn(function()
-    while ScreenGui.Parent do
-        wait(1)
-        if currentVehicle ~= lastVehicle then
-            if lastVehicle then
-                -- Optional: Alte Werte zurücksetzen (falls nötig)
-                print("Fahrzeug verlassen: " .. lastVehicle.Name)
-            end
-            if currentVehicle then
-                print("Neues Fahrzeug erkannt: " .. currentVehicle.Name)
-                -- Wende die aktuellen Einstellungen auf das neue Fahrzeug an
-                updateCarSpeed()
-                updateCarBrake()
-            end
-            lastVehicle = currentVehicle
-        end
-    end
-end)
-
 -- Stelle sicher, dass Character und Humanoid immer aktuell sind
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     Character = newChar
@@ -750,6 +726,49 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     end
     if flying then
         stopFly()
+    end
+end)
+
+-- ==================== EVENT-HANDLER FÜR DIE SPIELERLISTE ====================
+
+-- Wenn ein Button in der Spielerliste geklickt wird
+PlayerScrollingFrame.ChildAdded:Connect(function(child)
+    if child:IsA("TextButton") then
+        child.MouseButton1Click:Connect(function()
+            local playerName = child.Text:gsub(" %[FOLLOWING%]", "") -- Name bereinigen
+            local player = Players:FindFirstChild(playerName)
+            if player then
+                toggleFollow(player)
+            end
+        end)
+    end
+end)
+
+-- Verbindung zu Events, wenn Spieler den Server betreten oder verlassen
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        updatePlayerList()
+    end)
+    updatePlayerList()
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    -- Wenn der Spieler, dem wir folgen, geht, hören wir auf zu folgen
+    if targetPlayer == player then
+        toggleFollow(player)
+    end
+    removePlayerButton(player)
+end)
+
+-- ==================== INITIALISIERUNG ====================
+-- Erstelle die initiale Spielerliste
+updatePlayerList()
+
+-- Aktualisiere die Liste alle paar Sekunden für den Fall, dass etwas verpasst wird
+spawn(function()
+    while ScreenGui.Parent do
+        wait(5)
+        updatePlayerList()
     end
 end)
 
