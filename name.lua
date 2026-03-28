@@ -173,7 +173,7 @@ local isDragging = false
 local barrierParts = {}
 local flying = false
 local noClipEnabled = false
-local flySpeed = 50
+local flySpeed = 100
 local bodyVelocity
 local bodyGyro
 -- NEU: ESP Variablen
