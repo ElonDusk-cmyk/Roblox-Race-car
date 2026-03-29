@@ -115,6 +115,19 @@ InstaKillButton.TextColor3 = Color3.new(1, 0, 0)
 InstaKillButton.Font = Enum.Font.SourceSansBold
 InstaKillButton.TextSize = 16
 
+-- NEU: ATM Farm Button
+local ATMFarmButton = Instance.new("TextButton")
+ATMFarmButton.Parent = MainFrame
+ATMFarmButton.Size = UDim2.new(0, 200, 0, 30)
+ATMFarmButton.Position = UDim2.new(0, 50, 0, 300) -- Position unter dem Insta-Kill-Button
+ATMFarmButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+ATMFarmButton.BorderSizePixel = 1
+ATMFarmButton.BorderColor3 = Color3.new(0, 1, 0)
+ATMFarmButton.Text = "ATM Farm: AUS"
+ATMFarmButton.TextColor3 = Color3.new(1, 0, 0)
+ATMFarmButton.Font = Enum.Font.SourceSansBold
+ATMFarmButton.TextSize = 16
+
 local CloseButton = Instance.new("TextButton")
 CloseButton.Parent = MainFrame
 CloseButton.Size = UDim2.new(0, 30, 0, 30)
@@ -185,6 +198,11 @@ local instaKillEnabled = false
 local targetPlayer = nil
 local isFollowing = false
 local followConnection = nil
+-- NEU: ATM-Raub Variablen
+local atmFarmEnabled = false
+local currentATM = nil
+local isRobbing = false
+local atmCooldown = 0
 
 -- Geschwindigkeitsfunktion
 local function updateSpeed()
@@ -466,6 +484,120 @@ local function toggleESP()
     end
 end
 
+-- ==================== NEUE ATM-RAUB-FUNKTIONEN ====================
+
+-- Funktion zum Finden des nächsten verfügbaren ATMs
+local function findNearestAvailableATM()
+    local nearestATM = nil
+    local shortestDistance = math.huge
+    local playerRoot = Humanoid.Parent:FindFirstChild("HumanoidRootPart")
+
+    if not playerRoot then return nil end
+
+    -- Wir gehen davon aus, dass ATMs einen bestimmten Namen haben, z.B. "ATM", "MoneyMachine" etc.
+    -- Passe die Namen bei Bedarf an dein Spiel an.
+    local possibleATMNames = {"ATM", "MoneyMachine", "CashMachine", "Bankomat"}
+
+    for _, obj in pairs(workspace:GetDescendants()) do
+        for _, name in pairs(possibleATMNames) do
+            if obj.Name:lower():find(name:lower()) and obj:IsA("Model") then
+                -- Überprüfen, ob der ATM gerade ausgeraubt wird (oft ein BoolValue oder ein spezieller Zustand)
+                local isBeingRobbed = obj:FindFirstChild("IsBeingRobbed") or obj:FindFirstChild("InUse")
+                if not isBeingRobbed or (isBeingRobbed:IsA("BoolValue") and not isBeingRobbed.Value) then
+                    local distance = (playerRoot.Position - obj.PrimaryPart.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        nearestATM = obj
+                    end
+                end
+            end
+        end
+    end
+    return nearestATM
+end
+
+-- Funktion zum Starten des Raubs (simuliert das Halten der Taste)
+local function startRobbery(atm)
+    if not atm or not Character or not Humanoid or not Humanoid.Parent:FindFirstChild("HumanoidRootPart") then return end
+
+    -- Teleportiere den Spieler zum ATM
+    Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = atm.PrimaryPart.CFrame * CFrame.new(0, 0, 3) -- 3 Meter vor den ATM
+
+    -- Warte einen kurzen Moment, damit der Spieler "ankommt"
+    wait(0.5)
+
+    -- Dies ist der entscheidende Teil. Wir müssen die Aktion auslösen, die normalerweise durch Halten einer Taste passiert.
+    -- Oft ist das ein RemoteEvent oder eine Funktion im ATM-Modell.
+    -- Wir versuchen hier, eine gängige Methode zu finden und auszulösen.
+
+    -- Methode 1: RemoteEvent auslösen (häufigste Methode)
+    local robEvent = atm:FindFirstChild("RobEvent") or atm:FindFirstChild("StartRobbery") or atm:FindFirstChild("InteractEvent")
+    if robEvent and robEvent:IsA("RemoteEvent") then
+        print("Sende RobEvent an ATM: " .. atm.Name)
+        robEvent:FireServer(atm)
+        return true
+    end
+
+    -- Methode 2: Eine Funktion im Skript des ATMs aufrufen (weniger häufig, aber möglich)
+    local atmScript = atm:FindFirstChildOfClass("Script")
+    if atmScript and atmScript:IsA("LocalScript") then
+        -- Dies ist unsicher und funktioniert oft nicht, aber einen Versuch ist es wert
+        local success, err = pcall(function()
+            -- Der Name der Funktion ist ein Schuss ins Blaue
+            atmScript.StartRobbing:Fire()
+        end)
+        if success then return true end
+    end
+
+    -- Methode 3: Ein Wert im ATM wird geändert, um den Raub zu starten
+    local robTrigger = atm:FindFirstChild("RobTrigger") or atm:FindFirstChild("IsBeingRobbed")
+    if robTrigger and robTrigger:IsA("BoolValue") then
+        robTrigger.Value = true
+        print("Setze RobTrigger auf true für ATM: " .. atm.Name)
+        return true
+    end
+
+    -- Methode 4: Simuliere das Drücken einer Taste (z.B. 'E')
+    -- Dies ist eine allgemeine Methode, falls der ATM auf Tastendrücke reagiert
+    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    wait(0.1)
+    game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game)
+    print("Simuliere 'E'-Tastendruck für ATM: " .. atm.Name)
+    return true
+end
+
+-- Hauptfunktion, die den Farm-Prozess steuert
+local function farmATMs()
+    if not atmFarmEnabled then return end
+
+    -- Warte, bis die Abklingzeit abgelaufen ist
+    if atmCooldown > 0 then
+        atmCooldown = atmCooldown - 1
+        return
+    end
+
+    if not isRobbing then
+        currentATM = findNearestAvailableATM()
+        if currentATM then
+            isRobbing = true
+            print("Teleportiere zu ATM: " .. currentATM.Name)
+            local success = startRobbery(currentATM)
+            if success then
+                -- Setze eine Abklingzeit (z.B. 30 Sekunden), bevor der nächste ATM gesucht wird
+                atmCooldown = 30 -- Passe die Zeit an die Abklingzeit im Spiel an
+            else
+                print("Konnte den Raub nicht starten. Suche nächsten ATM...")
+                atmCooldown = 5 -- Kurze Pause vor dem nächsten Versuch
+            end
+            isRobbing = false
+            currentATM = nil
+        else
+            print("Kein verfügbarer ATM gefunden. Warte...")
+            atmCooldown = 10 -- Warte 10 Sekunden, bevor erneut gesucht wird
+        end
+    end
+end
+
 -- Fliegen-Funktionen
 local function startFly()
     if flying then return end
@@ -619,6 +751,30 @@ FlyButton.MouseButton1Click:Connect(function()
         stopFly()
     else
         startFly()
+    end
+end)
+
+-- Event für den neuen ATM Farm Button
+ATMFarmButton.MouseButton1Click:Connect(function()
+    atmFarmEnabled = not atmFarmEnabled
+    if atmFarmEnabled then
+        ATMFarmButton.Text = "ATM Farm: AN"
+        ATMFarmButton.TextColor3 = Color3.new(0, 1, 0)
+        print("ATM-Farm aktiviert.")
+    else
+        ATMFarmButton.Text = "ATM Farm: AUS"
+        ATMFarmButton.TextColor3 = Color3.new(1, 0, 0)
+        print("ATM-Farm deaktiviert.")
+        isRobbing = false
+        currentATM = nil
+    end
+end)
+
+-- Führe die Farm-Funktion regelmäßig aus (z.B. jede Sekunde)
+spawn(function()
+    while ScreenGui.Parent do
+        wait(1)
+        farmATMs()
     end
 end)
 
