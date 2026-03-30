@@ -733,7 +733,7 @@ UserInputService.InputChanged:Connect(function(input)
         local sliderSize = SpeedSlider.AbsoluteSize
         
         local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
-        speedValue = 0.1 + (relativeX * 999.9) -- 0.1 bis 10.0
+        speedValue = 0.1 + (relativeX * 99.9) -- 0.1 bis 10.0
         
         updateSpeed()
     end
